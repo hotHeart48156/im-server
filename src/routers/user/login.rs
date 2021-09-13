@@ -1,6 +1,5 @@
 use actix_session::Session;
 use actix_web::{post, web, Error, HttpResponse};
-use futures::TryFutureExt;
 use jsonwebtoken::{Algorithm, EncodingKey, Header, encode};
 use serde::{Deserialize, Serialize};
 
@@ -16,12 +15,9 @@ pub async fn login(
     let user = user_operator
         .get_user_by_name_and_password(userinfo.name.to_owned(), userinfo.password.to_owned());
     if let Some(user) = user {
-        let token=gen_token(user).await.unwrap();
+        let token=gen_token(user.clone()).await.unwrap();
         println!("{}",userinfo.name.as_str());
-        session.set(userinfo.name.as_str(), token.clone())?;
-        let ff:Option<String>=session.get(userinfo.name.as_str()).unwrap();
-
-        println!("{:?}",ff);
+        session.set(user.id.to_owned().to_string().as_str(), token.clone())?;
         return Ok(HttpResponse::Ok().body(token));
     }else {
         Ok(HttpResponse::NotFound().body("cant find user"))

@@ -10,17 +10,27 @@ pub async fn start_server() {
     let redis_addr = std::env::var("REDIS_URL").unwrap();
     std::env::set_var("RUST_LOG", "actix_web=info,actix_redis=info");
     env_logger::init();
+    // let private_key = rand::thread_rng().gen::<[u8; 32]>();
+    let private_key=[0;32];
     let server = HttpServer::new(move || {
         App::new()
             .wrap(middleware::Logger::default())
-            .wrap(RedisSession::new(redis_addr.to_owned(), &[0; 32]))
+            .wrap(
+                RedisSession::new(redis_addr.to_owned(), &private_key)
+                    .cookie_name("im-server")
+                    .cookie_path("/ws")
+                    .cookie_http_only(false)
+            )
             .data(pg_pool())
             .service(web::resource("/ws").to(web_stock_chat_route))
             .service(login)
             .service(register)
     })
+    .workers(1)
     .bind(&addr.as_str())
     .unwrap();
+    println!("server running {}", addr);
+    // server
     server.run().await.unwrap();
 }
 
