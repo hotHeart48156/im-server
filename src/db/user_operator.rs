@@ -25,16 +25,15 @@ impl UserOperator<'_> {
         user_name: String,
         user_password: String,
     ) -> Option<User> {
-        let result: User = users
+        let result = users
             .filter(name.eq(&user_name).and(password.eq(&user_password)))
             .limit(1)
-            .get_result::<User>(&self.conn.get().unwrap())
-            .expect("error load user");
-        if result.id == 0 {
-            return None;
-        } else {
-            return Some(result);
-        }
+            .get_result::<User>(&self.conn.get().unwrap());
+            match result{
+                Ok(user)=>Some(user) ,
+                Err(_)=>{None}
+            }
+       
     }
 
     pub fn get_user_by_id(&self, user_id: i32) -> User {

@@ -1,4 +1,7 @@
-use crate::routers::web_stock_chat_route;
+use crate::routers::{
+    user::{login::login, register::register},
+    web_stock_chat_route,
+};
 use actix_redis::RedisSession;
 use actix_web::{middleware, web, App, HttpServer};
 use diesel::{self, r2d2::ConnectionManager, PgConnection};
@@ -9,10 +12,12 @@ pub async fn start_server() {
     env_logger::init();
     let server = HttpServer::new(move || {
         App::new()
-            .wrap(RedisSession::new(redis_addr.to_owned(), "key".as_bytes()))
             .wrap(middleware::Logger::default())
+            .wrap(RedisSession::new(redis_addr.to_owned(), &[0; 32]))
             .data(pg_pool())
             .service(web::resource("/ws").to(web_stock_chat_route))
+            .service(login)
+            .service(register)
     })
     .bind(&addr.as_str())
     .unwrap();
