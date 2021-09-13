@@ -17,7 +17,17 @@ futures = "0.3"
 log = "0.4"
 rand = "0.7"
 dotenv = "0.15.0"
-diesel = { version = "1.4.7", features = ["postgres"] }
+diesel = { version = "1.4.7", features = ["postgres","r2d2"] }
 serde_json="1.0"
 serde="1.0"
 chrono = "0.4.19"
+r2d2 = "0.8.9"
+r2d2_redis = "0.14.0"
+jwt = "0.15.0"
+sha2 = "0.9.8"
+hmac = "0.11.0"
+redis = { version = "0.19.0", features = ["tokio-native-tls-comp", "cluster"] }
+actix-session = "0.4"
+actix-redis = "0.9"
+actix-service = "1"
+actix-http = "2"

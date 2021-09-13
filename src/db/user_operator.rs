@@ -1,10 +1,11 @@
 use crate::models::user_model::{NewUser, User};
 use crate::schema::users;
 use crate::schema::users::dsl::*;
-use diesel::{prelude::*, PgConnection, RunQueryDsl};
+use crate::server::DbPoolType;
+use diesel::{prelude::*, RunQueryDsl};
 
 pub struct UserOperator<'a> {
-    pub conn: &'a PgConnection,
+    pub conn:&'a DbPoolType
 }
 
 impl UserOperator<'_> {
@@ -16,23 +17,31 @@ impl UserOperator<'_> {
         };
         diesel::insert_into(users::table)
             .values(&new_user)
-            .get_result::<User>(self.conn.clone())
+            .get_result::<User>(&self.conn.get().unwrap())
             .expect("error create user");
     }
-    pub fn get_user_by_name(&self, user_name: String, user_password: String) -> User {
+    pub fn get_user_by_name_and_password(
+        &self,
+        user_name: String,
+        user_password: String,
+    ) -> Option<User> {
         let result: User = users
             .filter(name.eq(&user_name).and(password.eq(&user_password)))
             .limit(1)
-            .get_result::<User>(self.conn.clone())
+            .get_result::<User>(&self.conn.get().unwrap())
             .expect("error load user");
-        result
+        if result.id == 0 {
+            return None;
+        } else {
+            return Some(result);
+        }
     }
 
     pub fn get_user_by_id(&self, user_id: i32) -> User {
         let result: User = users
             .filter(id.eq(&user_id))
             .limit(1)
-            .get_result::<User>(self.conn)
+            .get_result::<User>(&self.conn.get().unwrap())
             .expect("error load user");
         result
     }

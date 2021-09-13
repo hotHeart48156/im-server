@@ -1,3 +1,5 @@
+pub mod user;
+
 use actix_web::{HttpRequest,HttpResponse,Error,web};
 use actix_web_actors::ws;
 
