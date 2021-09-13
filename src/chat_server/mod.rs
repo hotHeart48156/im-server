@@ -65,9 +65,9 @@ impl ChatServer {
         // }
     }
     pub fn read_message(&self,_userid:i32){
-        todo!("for offline user read message ");
-        todo!("get all of user message id to set");
-        todo!("set ");
+        // todo!("for offline user read message ");
+        // todo!("get all of user message id to set");
+        // todo!("set ");
     }
     pub fn join_online_user(&mut self, userid: i32, ctx: Recipient<SendMessageToFriend>) {
         let user=self.online_users.get(&userid.to_string()) ;
