@@ -8,7 +8,6 @@ pub mod server;
 pub mod routers;
 pub mod test;
 pub mod util;
-pub mod nodb;
 #[macro_use]
 extern crate diesel;
 extern crate dotenv;
