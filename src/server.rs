@@ -1,8 +1,9 @@
-use crate::routers::{scoped_function, user::{login::login, register::register}, web_stock_chat_route};
+use crate::routers::{scoped_function, web_stock_chat_route};
 use actix_http::http;
 use actix_redis::RedisSession;
 use actix_web::{Result,App, HttpServer, dev, middleware::{self, errhandlers::{ErrorHandlerResponse, ErrorHandlers}}, web};
 use diesel::{self, r2d2::ConnectionManager, PgConnection};
+use rand::Rng;
 fn render_500<B>(mut res: dev::ServiceResponse<B>) -> Result<ErrorHandlerResponse<B>> {
     res.response_mut().headers_mut().insert(
         http::header::CONTENT_TYPE,
@@ -15,8 +16,7 @@ pub async fn start_server() {
     let redis_addr = std::env::var("REDIS_URL").unwrap();
     std::env::set_var("RUST_LOG", "actix_web=info,actix_redis=info");
     env_logger::init();
-    // let private_key = rand::thread_rng().gen::<[u8; 32]>();
-    let private_key=[0;32];
+    let private_key = rand::thread_rng().gen::<[u8; 32]>();
     let server = HttpServer::new(move || {
         App::new()
             .wrap(middleware::Logger::default())
@@ -31,11 +31,8 @@ pub async fn start_server() {
             )
             .data(pg_pool())
             .service(web::resource("/ws").to(web_stock_chat_route))
-            // .service(login)
-            // .service(register)
             .configure(scoped_function)
     })
-    .workers(1)
     .bind(&addr.as_str())
     .unwrap();
     println!("server running {}", addr);
