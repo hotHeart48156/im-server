@@ -30,3 +30,5 @@ actix-redis = "0.9"
 actix-service = "1"
 actix-http = "2"
 tokio = { version = "1.11.0", features = ["full"] }
+# daemonize = "0.4.1"
+windows-service = "0.4.0"

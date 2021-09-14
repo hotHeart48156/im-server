@@ -12,8 +12,7 @@ pub struct NewFriend {
     pub user_id: i32,
     pub friend_id: i32,
 }
-#[derive(Debug,Serialize,Deserialize,Clone, Copy)]
+#[derive(Debug,Serialize,Deserialize,Clone,Default)]
 pub struct PostFriend {
-    pub user_id: i32,
-    pub friend_id: i32,
+    pub friend_id: String,
 }
