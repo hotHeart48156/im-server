@@ -1,10 +1,15 @@
-use crate::routers::{
-    user::{login::login, register::register},
-    web_stock_chat_route,
-};
+use crate::routers::{scoped_function, user::{login::login, register::register}, web_stock_chat_route};
+use actix_http::http;
 use actix_redis::RedisSession;
-use actix_web::{middleware, web, App, HttpServer};
+use actix_web::{Result,App, HttpServer, dev, middleware::{self, errhandlers::{ErrorHandlerResponse, ErrorHandlers}}, web};
 use diesel::{self, r2d2::ConnectionManager, PgConnection};
+fn render_500<B>(mut res: dev::ServiceResponse<B>) -> Result<ErrorHandlerResponse<B>> {
+    res.response_mut().headers_mut().insert(
+        http::header::CONTENT_TYPE,
+        http::HeaderValue::from_static("Error"),
+    );
+    Ok(ErrorHandlerResponse::Response(res))
+}
 pub async fn start_server() {
     let addr = dotenv::var("SERVER_URL").unwrap();
     let redis_addr = std::env::var("REDIS_URL").unwrap();
@@ -21,10 +26,14 @@ pub async fn start_server() {
                     .cookie_path("/ws")
                     .cookie_http_only(false)
             )
+            .wrap(
+                ErrorHandlers::new().handler(http::StatusCode::INTERNAL_SERVER_ERROR, render_500)
+            )
             .data(pg_pool())
             .service(web::resource("/ws").to(web_stock_chat_route))
-            .service(login)
-            .service(register)
+            // .service(login)
+            // .service(register)
+            .configure(scoped_function)
     })
     .workers(1)
     .bind(&addr.as_str())

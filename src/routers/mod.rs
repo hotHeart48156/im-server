@@ -16,10 +16,29 @@ pub async fn web_stock_chat_route(
     stream: web::Payload,
     id: web::Query<Id>,
 ) -> Result<HttpResponse, Error> {
-    let res:Option<String>=session.get(id.id.clone().as_str()).unwrap();
+    let res: Option<String> = session.get(id.id.clone().as_str()).unwrap();
     match res {
-        Some(_) => {ws::start(UserSession{user_id:id.id.to_owned()}, &req, stream)},
-        None => {Ok(HttpResponse::NotFound().body("user id expired"))},
+        Some(_) => ws::start(
+            UserSession {
+                user_id: id.id.to_owned(),
+            },
+            &req,
+            stream,
+        ),
+        None => Ok(HttpResponse::NotFound().body("user id is expired")),
     }
-    
+}
+
+pub fn scoped_function(cfg: &mut web::ServiceConfig) {
+    cfg
+    .service(user::login::login)
+    .service(user::register::register)
+    .service(user::friend::add_friend)
+    .service(user::friend::delete_friend)
+    .service(user::friend::list_friend)
+    .service(user::room::add_room)
+    .service(user::room::delete_room)
+    .service(user::room::list_room)
+
+    ;
 }

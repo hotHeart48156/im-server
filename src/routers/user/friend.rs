@@ -44,8 +44,7 @@ pub async fn list_friend(
             let result=friend_operator
                 .list_friends(friend.userid.parse::<i32>().unwrap())
                 .unwrap();
-            let body=serde_json::to_string(&result).unwrap();
-            Ok(HttpResponse::Ok().body(body))
+            Ok(HttpResponse::Ok().json(result))
         }
         None => Ok(HttpResponse::Forbidden().body("token not exist")),
     }

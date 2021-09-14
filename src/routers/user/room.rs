@@ -38,8 +38,7 @@ pub async fn list_room(
             let result=room_operator
                 .list_room(room.user_id)
                 .unwrap();
-                let body=serde_json::to_string(&result).unwrap();
-            Ok(HttpResponse::Ok().body(body))
+            Ok(HttpResponse::Ok().json(result))
         }
         None => Ok(HttpResponse::Forbidden().body("token not exist")),
     }

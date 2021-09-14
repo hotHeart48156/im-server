@@ -25,7 +25,7 @@ pub async fn login(
     
 }
 
-pub async fn gen_token<'a, T>(ser: T) -> Result<String,Box<dyn std::error::Error>>
+ async fn gen_token<'a, T>(ser: T) -> Result<String,Box<dyn std::error::Error>>
 where
     T: Serialize + Deserialize<'a>,
 {   let key=EncodingKey::from_secret("secret".as_ref());

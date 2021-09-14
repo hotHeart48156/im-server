@@ -20,6 +20,6 @@ pub struct NewUser<'a> {
 #[derive(Debug,Clone,Serialize,Deserialize)]
 pub struct PostUser{
     pub name:String ,
-    pub gender:Option<i16> ,
+    // pub gender:Option<i16> ,
     pub password: String ,
 }

@@ -56,7 +56,7 @@ impl ChatServer {
             friend_id: friendid,
             user_id: userid,
         };
-        let friend=self.online_users.get(&userid.to_string());
+        let friend=self.online_users.get(&friendid.to_string());
         if let Some(online_user) = friend {
             online_user.do_send(msg).unwrap();
         }
@@ -112,7 +112,6 @@ impl Handler<SendMessageToFriend> for ChatServer {
 impl Handler<SendMessageToRoom> for ChatServer {
     type Result = ();
     fn handle(&mut self, msg: SendMessageToRoom, _ctx: &mut Self::Context) -> Self::Result {
-        println!("handle SendMessage To Room ");
         self.send_message_to_room(msg.user_id, msg.room_id, msg.msg.as_str())
     }
 }

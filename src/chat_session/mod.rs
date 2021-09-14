@@ -71,10 +71,8 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for UserSession {
                     command.next();
                     match command.next() {
                         Some("send_message_to_friend") => {
-                            // println!("yes match send message to friend");
                             let mut recv_msg = "";
                             let mut recv_friend_id: i32 = 0;
-                           
                             if let Some(msg) = command.next() {
                                 recv_msg = msg;
                             }
@@ -120,6 +118,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for UserSession {
             ws::Message::Close(reason) => {
                 ctx.close(reason);
                 ctx.stop();
+                
             }
             _ => {}
         };
