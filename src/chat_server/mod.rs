@@ -89,8 +89,6 @@ impl ChatServer {
        
     }
 
-    pub fn list_friend() {}
-    pub fn list_rooms() {}
 }
 
 impl Actor for ChatServer {

@@ -33,6 +33,7 @@ pub async fn start_server() {
             .service(web::resource("/ws").to(web_stock_chat_route))
             .configure(scoped_function)
     })
+    .workers(1)
     .bind(&addr.as_str())
     .unwrap();
     println!("server running {}", addr);

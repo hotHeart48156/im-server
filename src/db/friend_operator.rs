@@ -6,11 +6,11 @@ pub struct FriendOperator<'a> {
     pub conn: &'a DbPoolType,
 }
 impl<'a> FriendOperator<'a> {
-    pub fn add_friends(&self, userid: i32, friendid: i32) -> Result<Friend, diesel::result::Error> {
-        let new_friend = NewFriend {
-            friend_id: friendid,
-            user_id: userid,
-        };
+    pub fn add_friends(&self, new_friend:NewFriend) -> Result<Friend, diesel::result::Error> {
+        // let new_friend = NewFriend {
+        //     friend_id: friendid,
+        //     user_id: userid,
+        // };
         diesel::insert_into(friends::table)
             .values(&new_friend)
             .get_result::<Friend>(&self.conn.get().unwrap())
