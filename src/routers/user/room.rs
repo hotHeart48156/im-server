@@ -62,12 +62,12 @@ where
     let token = get_token(&req);
     match token {
         Some(tk) => {
-            match check_user_token_is_expired(std::str::from_utf8(tk.as_bytes()).unwrap(), &session)
+            match check_user_token_is_expired(std::str::from_utf8(tk.as_bytes()).unwrap())
             {
                 Some(id) => handle(id),
-                None => Ok(HttpResponse::Forbidden().body("token not exist")),
+                None => Ok(HttpResponse::Forbidden().body("token is expired")),
             }
         }
-        None => Ok(HttpResponse::Forbidden().body("token not exist")),
+        None => Ok(HttpResponse::Forbidden().body("token is expired")),
     }
 }
