@@ -108,6 +108,8 @@ impl Handler<message::Message> for ChatServer {
             }
         }
 
+        
+
         if let message::MessageTo::RoomMessage(id) = msg.msg_to {
             if let message::MessageType::Text = msg.msg_type {
                 self.send_text_message_to_room(
