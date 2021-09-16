@@ -11,7 +11,7 @@ pub struct AddFriend{
 #[rtype(result = "()")]
 pub struct JoinOnlineUser{
     pub user_id:i32,
-    pub ctx:Recipient<SendMessageToFriend>
+    pub ctx:Recipient<Message>
 }
 
 #[derive(Message)]
@@ -55,6 +55,16 @@ pub struct SendMessageToFriend{
     pub friend_id:i32,
     pub user_id:i32,
     
+}
+
+#[derive(Message,Clone)]
+#[rtype(result = "()")]
+pub struct Message{
+    pub id:String,
+    pub msg_content:String,
+    pub msg_type:String,
+    pub msg_from:String,
+    pub msg_to:String
 }
 
 

@@ -1,4 +1,3 @@
-use actix_session::Session;
 
 use crate::models::user_model::{TokenUser};
 

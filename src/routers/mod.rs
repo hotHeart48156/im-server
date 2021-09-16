@@ -1,6 +1,5 @@
 pub mod user;
 
-use actix_session::Session;
 use actix_web::{web, Error, HttpRequest, HttpResponse};
 use actix_web_actors::ws;
 use serde::{Deserialize, Serialize};
@@ -9,24 +8,24 @@ pub struct Id {
     pub id: String,
 }
 
-use crate::chat_session::UserSession;
+use crate::{chat_session::UserSession, util::{check_token_expired::check_user_token_is_expired, get_token::get_token}};
 pub async fn web_stock_chat_route(
     req: HttpRequest,
-    session: Session,
     stream: web::Payload,
-    id: web::Query<Id>,
 ) -> Result<HttpResponse, Error> {
-    let res: Option<String> = session.get(id.id.clone().as_str()).unwrap();
-    match res {
-        Some(_) => ws::start(
-            UserSession {
-                user_id: id.id.to_owned(),
-            },
-            &req,
-            stream,
-        ),
-        None => Ok(HttpResponse::NotFound().body("user id is expired")),
+    println!("web_stock_chat_route");
+    let token=get_token(&req);
+    match token {
+        Some(tk) => {
+            println!("tk--{}",std::str::from_utf8(tk.as_bytes()).unwrap());
+            match check_user_token_is_expired(std::str::from_utf8(tk.as_bytes()).unwrap()) {
+                Some(id) => {println!("tokem-id--{}",id); ws::start(UserSession{user_id:id}, &req, stream)},
+                None => {Ok(HttpResponse::NotFound().body("user id is expired"))},
+            }       },
+        None => {Ok(HttpResponse::NotFound().body("cannot find token in head"))},
     }
+
+    
 }
 
 pub fn scoped_function(cfg: &mut web::ServiceConfig) {
