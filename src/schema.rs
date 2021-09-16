@@ -7,6 +7,16 @@ table! {
 }
 
 table! {
+    message (id) {
+        id -> Int4,
+        user_id -> Int4,
+        from_id -> Int4,
+        message_type -> Varchar,
+        message_content -> Nullable<Text>,
+    }
+}
+
+table! {
     room_members (id) {
         id -> Int4,
         room_id -> Int4,
@@ -32,6 +42,7 @@ table! {
 
 allow_tables_to_appear_in_same_query!(
     friends,
+    message,
     room_members,
     rooms,
     users,

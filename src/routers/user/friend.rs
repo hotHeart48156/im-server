@@ -4,17 +4,14 @@ use crate::{
     server::DbPoolType,
     util::{check_token_expired::check_user_token_is_expired, get_token::get_token},
 };
-use actix_session::Session;
 use actix_web::{post, web, Error, HttpRequest, HttpResponse};
 #[post("/add_friend")]
 pub async fn add_friend(
-    session: Session,
     pool: web::Data<DbPoolType>,
     friend: web::Json<PostFriend>,
     req: HttpRequest,
 ) -> Result<HttpResponse, Error> {
     handle(
-        &session,
         pool.to_owned(),
         friend.to_owned(),
         req,
@@ -32,12 +29,10 @@ pub async fn add_friend(
 
 #[post("/list_friend")]
 pub async fn list_friend(
-    session: Session,
     pool: web::Data<DbPoolType>,
     req: HttpRequest,
 ) -> Result<HttpResponse, Error> {
     handle(
-        &session,
         pool.to_owned(),
         PostFriend::default(),
         req,
@@ -53,13 +48,11 @@ pub async fn list_friend(
 
 #[post("/delete_friend")]
 pub async fn delete_friend(
-    session: Session,
     pool: web::Data<DbPoolType>,
     friend: web::Json<PostFriend>,
     req: HttpRequest,
 ) -> Result<HttpResponse, Error> {
     handle(
-        &session,
         pool.to_owned(),
         PostFriend::default(),
         req,
@@ -78,7 +71,6 @@ pub async fn delete_friend(
 }
 
 pub fn handle<F>(
-    session: &Session,
     pool: web::Data<DbPoolType>,
     friend: PostFriend,
     req: HttpRequest,
@@ -90,7 +82,7 @@ where
     let token = get_token(&req);
     match token {
         Some(tk) => {
-            match check_user_token_is_expired(std::str::from_utf8(tk.as_bytes()).unwrap(), &session)
+            match check_user_token_is_expired(std::str::from_utf8(tk.as_bytes()).unwrap())
             {
                 Some(id) => {
                     let new_friend = NewFriend {
@@ -101,9 +93,9 @@ where
                     friend_operator.add_friends(new_friend).unwrap();
                     handle(id)
                 }
-                None => Ok(HttpResponse::Forbidden().body("token not exist")),
+                None => Ok(HttpResponse::Forbidden().body("token is expired")),
             }
         }
-        None => Ok(HttpResponse::Forbidden().body("token not exist")),
+        None => Ok(HttpResponse::Forbidden().body("cannot find token in head")),
     }
 }

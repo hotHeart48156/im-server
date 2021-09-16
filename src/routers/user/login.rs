@@ -4,15 +4,12 @@ use crate::{
     server::DbPoolType,
     util::token::Token,
 };
-use actix_session::Session;
 use actix_web::{post, web, Error, HttpResponse};
 #[post("/login")]
 pub async fn login(
     pool: web::Data<DbPoolType>,
     userinfo: web::Json<PostUser>,
-    session: Session,
 ) -> Result<HttpResponse, Error> {
-    println!("{}--{}", userinfo.name, userinfo.password);
     let user_operator = UserOperator { conn: &pool };
     let user = user_operator
         .get_user_by_name_and_password(userinfo.name.to_owned(), userinfo.password.to_owned());
@@ -26,7 +23,7 @@ pub async fn login(
                     gender:recv_user.gender,
                 })
                 .unwrap();
-            session.set(recv_user.id.to_owned().to_string().as_str(), token.clone())?;
+            // session.set(recv_user.id.to_owned().to_string().as_str(), token.clone())?;
             Ok(HttpResponse::Ok().body(token))
         }
         None => Ok(HttpResponse::NotAcceptable().body("cant find user")),

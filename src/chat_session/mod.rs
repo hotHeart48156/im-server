@@ -1,5 +1,5 @@
 use crate::chat_server::ChatServer;
-use crate::message::{JoinOnlineUser, SendMessageToFriend, SendMessageToRoom};
+use crate::message::{self, JoinOnlineUser};
 use actix::prelude::*;
 use actix::Handler;
 use actix::{Actor, StreamHandler};
@@ -13,25 +13,27 @@ pub struct UserSession {
 impl UserSession {
     pub fn send_message_to_room(&self, user_id: i32, content: &str, roomid: i32) {
         let id: i32 = rand::random();
-        let msg = SendMessageToRoom {
+        let msg = message::Message {
             id: id.to_string(),
-            msg: content.to_string(),
-            user_id: user_id,
-            room_id: roomid,
+            msg_content: content.to_string(),
+            msg_from: user_id.to_string(),
+            msg_to: roomid.to_string(),
+            msg_type:"room_message".to_string()
         };
         self.issue_system_async(msg);
     }
     pub fn send_message_to_friend(&self,  userid: i32,content: &str, friendid: i32) {
         let id: i32 = rand::random();
-        let msg = SendMessageToFriend {
+        let msg = message::Message {
             id: id.to_string(),
-            msg: content.to_string(),
-            friend_id: friendid,
-            user_id: userid,
+            msg_content: content.to_string(),
+            msg_to: friendid.to_string(),
+            msg_from: userid.to_string(),
+            msg_type:"user_message".to_string()
         };
         self.issue_system_async(msg);
     }
-    pub fn join_online_user(&self, userid: i32, ctx: Recipient<SendMessageToFriend>) {
+    pub fn join_online_user(&self, userid: i32, ctx: Recipient<message::Message>) {
         let msg = JoinOnlineUser {
             user_id: userid,
             ctx: ctx,
@@ -48,10 +50,10 @@ impl Actor for UserSession {
     }
 }
 
-impl Handler<SendMessageToFriend> for UserSession {
+impl Handler<message::Message> for UserSession {
     type Result = ();
-    fn handle(&mut self, msg: SendMessageToFriend, ctx: &mut Self::Context) -> Self::Result {
-        ctx.text(msg.msg);
+    fn handle(&mut self, msg: message::Message, ctx: &mut Self::Context) -> Self::Result {
+        ctx.text(msg.msg_content);
     }
 }
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for UserSession {
@@ -98,13 +100,9 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for UserSession {
                         }
 
                         Some("regist_online_user") => {
-                            let mut userid = "";
-                            if let Some(user_id) = command.next() {
-                                userid = user_id;
-                            }
-                            println!("id--{}", userid);
+                            println!("id--{}", self.user_id);
                             self.join_online_user(
-                                userid.parse::<i32>().unwrap(),
+                                self.user_id.parse::<i32>().unwrap(),
                                 ctx.address().recipient(),
                             )
                         }
