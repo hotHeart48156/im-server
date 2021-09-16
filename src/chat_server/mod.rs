@@ -1,9 +1,9 @@
-use crate::message::{JoinOnlineUser, SendMessageToFriend, SendMessageToRoom};
+use crate::message;
+use crate::message::JoinOnlineUser;
 use actix::prelude::*;
 use actix::{Actor, Context};
 use actix_broker::BrokerSubscribe;
 use std::collections::HashMap;
-use crate::message;
 type RoomClient = Recipient<message::Message>;
 type Room = HashMap<usize, RoomClient>;
 type OnlineClient = Recipient<message::Message>;
@@ -33,14 +33,14 @@ impl ChatServer {
     }
     pub fn notify(&self) {}
 
-    pub fn send_message_to_room(&self, userid: i32, roomid: i32, msg: &str) {
+    pub fn send_text_message_to_room(&self, userid: i32, roomid: i32, msg: &str) {
         let msgid = format!("{:?}", std::time::Instant::now());
         let msg = message::Message {
             msg_content: msg.to_string(),
             msg_from: userid.to_string(),
             id: msgid,
-            msg_to: roomid.to_string(),
-            msg_type:"room_message".to_string()
+            msg_to: message::MessageTo::RoomMessage(roomid.to_string()),
+            msg_type: message::MessageType::Text,
         };
         if let Some(room) = self.rooms.get(&roomid.to_string()) {
             let msg = msg.clone();
@@ -50,53 +50,47 @@ impl ChatServer {
         }
     }
 
-    pub fn send_message_to_friend(&self, userid: i32, friendid: i32, msg: &str) {
-        let msgid = format!("{}-{:?}", friendid,std::time::Instant::now());
+    pub fn send_text_message_to_friend(&self, userid: i32, friendid: i32, msg: &str) {
+        let msgid = format!("{}-{:?}", friendid, std::time::Instant::now());
         let msg = message::Message {
             msg_content: msg.to_string(),
             id: msgid,
-            msg_to: friendid.to_string(),
+            msg_to: message::MessageTo::UserMessage(friendid.to_string()),
             msg_from: userid.to_string(),
-            msg_type:"user_message".to_string()
+            msg_type: message::MessageType::Text,
         };
 
-        let friend=self.online_users.get(&friendid.to_string());
+        let friend = self.online_users.get(&friendid.to_string());
         if let Some(online_user) = friend {
             online_user.do_send(msg).unwrap();
         }
-   
     }
-    pub fn read_message(&self,_userid:i32){
-      
-    }
+    pub fn read_message(&self, _userid: i32) {}
     pub fn join_online_user(&mut self, userid: i32, ctx: Recipient<message::Message>) {
-        let user=self.online_users.get(&userid.to_string()) ;
-        if None==user{
+        let user = self.online_users.get(&userid.to_string());
+        if None == user {
             self.online_users.insert(userid.to_string(), ctx);
-
-        }else {
-            let id:i32=rand::random();
-            let msg=message::Message{
-                id:id.to_string(),
-                msg_content:"alread register to online user".to_string(),
-                msg_from:userid.to_string(),
-                msg_to:userid.to_string(),
-                msg_type:"user_message".to_string()
-            };
-            if let Some(user) =user  {
-                user.do_send(msg).unwrap();
-            }
         }
-       
+        // else {
+        //     let id: i32 = rand::random();
+        //     let msg = message::Message {
+        //         id: id.to_string(),
+        //         msg_content: "alread register to online user".to_string(),
+        //         msg_from: userid.to_string(),
+        //         msg_to: message::MessageTo::UserMessage(userid.to_string()),
+        //         msg_type: message::MessageType::Text,
+        //     };
+        //     if let Some(user) = user {
+        //         user.do_send(msg).unwrap();
+        //     }
+        // }
     }
-
 }
 
 impl Actor for ChatServer {
     type Context = Context<Self>;
     fn started(&mut self, ctx: &mut Self::Context) {
         println!("chat server started");
-        self.subscribe_system_async::<SendMessageToRoom>(ctx);
         self.subscribe_system_async::<message::Message>(ctx);
     }
 }
@@ -104,18 +98,27 @@ impl Actor for ChatServer {
 impl Handler<message::Message> for ChatServer {
     type Result = ();
     fn handle(&mut self, msg: message::Message, _ctx: &mut Self::Context) -> Self::Result {
-        self.send_message_to_friend(msg.msg_from.parse::<i32>().unwrap(), msg.msg_to.parse::<i32>().unwrap(), msg.msg_content.as_str());
+        if let message::MessageTo::UserMessage(id) = msg.msg_to.clone() {
+            if let message::MessageType::Text = msg.msg_type {
+                self.send_text_message_to_friend(
+                    msg.msg_from.parse::<i32>().unwrap(),
+                    id.parse::<i32>().unwrap(),
+                    msg.msg_content.as_str(),
+                )
+            }
+        }
+
+        if let message::MessageTo::RoomMessage(id) = msg.msg_to {
+            if let message::MessageType::Text = msg.msg_type {
+                self.send_text_message_to_room(
+                    msg.msg_from.parse::<i32>().unwrap(),
+                    id.parse::<i32>().unwrap(),
+                    msg.msg_content.as_str(),
+                );
+            }
+        }
     }
 }
-
-impl Handler<SendMessageToRoom> for ChatServer {
-    type Result = ();
-    fn handle(&mut self, msg: SendMessageToRoom, _ctx: &mut Self::Context) -> Self::Result {
-        self.send_message_to_room(msg.user_id, msg.room_id, msg.msg.as_str())
-    }
-}
-
-
 
 impl Handler<JoinOnlineUser> for ChatServer {
     type Result = ();

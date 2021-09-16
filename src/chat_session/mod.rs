@@ -8,28 +8,28 @@ use actix_broker::BrokerIssue;
 use actix_web_actors::ws;
 #[derive(Default)]
 pub struct UserSession {
-    pub user_id:String
+    pub user_id: String,
 }
 impl UserSession {
-    pub fn send_message_to_room(&self, user_id: i32, content: &str, roomid: i32) {
+    pub fn send_text_message_to_room(&self, user_id: i32, content: &str, roomid: i32) {
         let id: i32 = rand::random();
         let msg = message::Message {
             id: id.to_string(),
             msg_content: content.to_string(),
             msg_from: user_id.to_string(),
-            msg_to: roomid.to_string(),
-            msg_type:"room_message".to_string()
+            msg_to: message::MessageTo::RoomMessage(roomid.to_string()),
+            msg_type: message::MessageType::Text,
         };
         self.issue_system_async(msg);
     }
-    pub fn send_message_to_friend(&self,  userid: i32,content: &str, friendid: i32) {
+    pub fn send_text_message_to_friend(&self, userid: i32, content: &str, friendid: i32) {
         let id: i32 = rand::random();
         let msg = message::Message {
             id: id.to_string(),
             msg_content: content.to_string(),
-            msg_to: friendid.to_string(),
+            msg_to: message::MessageTo::UserMessage(friendid.to_string()),
             msg_from: userid.to_string(),
-            msg_type:"user_message".to_string()
+            msg_type: message::MessageType::Text,
         };
         self.issue_system_async(msg);
     }
@@ -72,7 +72,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for UserSession {
                     let mut command = msg.split("/");
                     command.next();
                     match command.next() {
-                        Some("send_message_to_friend") => {
+                        Some("send_text_message_to_friend") => {
                             let mut recv_msg = "";
                             let mut recv_friend_id: i32 = 0;
                             if let Some(msg) = command.next() {
@@ -82,29 +82,45 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for UserSession {
                                 recv_friend_id = friend_id.parse::<i32>().unwrap();
                             }
                             ctx.text(recv_msg);
-                            self.send_message_to_friend(self.user_id.parse::<i32>().unwrap(),recv_msg , recv_friend_id)
+                            self.join_online_user(
+                                self.user_id.parse::<i32>().unwrap().clone(),
+                                ctx.address().recipient(),
+                            );
+                            self.send_text_message_to_friend(
+                                self.user_id.parse::<i32>().unwrap(),
+                                recv_msg,
+                                recv_friend_id,
+                            )
                         }
-                        Some("send_message_to_room") => {
+                        Some("send_text_message_to_room") => {
                             let mut recv_msg = "";
                             let mut recv_room_id: i32 = 0;
-                
+
                             if let Some(msg) = command.next() {
                                 recv_msg = msg;
                             }
                             if let Some(room_id) = command.next() {
                                 recv_room_id = room_id.parse::<i32>().unwrap();
                             }
-
-                            self.send_message_to_room(self.user_id.parse::<i32>().unwrap(), recv_msg, recv_room_id);
+                            self.join_online_user(
+                                self.user_id.parse::<i32>().unwrap().clone(),
+                                ctx.address().recipient(),
+                            );
+                            self.send_text_message_to_room(
+                                self.user_id.parse::<i32>().unwrap(),
+                                recv_msg,
+                                recv_room_id,
+                            );
                             ctx.text(recv_msg)
                         }
 
-                        Some("regist_online_user") => {
-                            println!("id--{}", self.user_id);
+                        Some("register_online_user") => {
+                            let id = self.user_id.clone();
+                            ctx.text(id);
                             self.join_online_user(
-                                self.user_id.parse::<i32>().unwrap(),
+                                self.user_id.parse::<i32>().unwrap().clone(),
                                 ctx.address().recipient(),
-                            )
+                            );
                         }
                         Some(msg) => {
                             println!("not found message{}", msg)
@@ -116,7 +132,6 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for UserSession {
             ws::Message::Close(reason) => {
                 ctx.close(reason);
                 ctx.stop();
-                
             }
             _ => {}
         };

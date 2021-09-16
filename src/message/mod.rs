@@ -62,9 +62,23 @@ pub struct SendMessageToFriend{
 pub struct Message{
     pub id:String,
     pub msg_content:String,
-    pub msg_type:String,
+    pub msg_type:MessageType,
     pub msg_from:String,
-    pub msg_to:String
+    pub msg_to:MessageTo,
+}
+
+#[derive(Message,Clone)]
+#[rtype(result = "()")]
+pub enum MessageType {
+    Text,
+    Binary
+}
+
+#[derive(Message,Clone)]
+#[rtype(result = "()")]
+pub enum MessageTo {
+    UserMessage(String),
+    RoomMessage(String)
 }
 
 
