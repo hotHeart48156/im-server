@@ -10,7 +10,7 @@ table! {
     message (id) {
         id -> Int4,
         user_id -> Int4,
-        from_id -> Int4,
+        destination_id -> Int4,
         message_type -> Varchar,
         message_content -> Nullable<Text>,
     }

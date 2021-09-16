@@ -1,31 +1,28 @@
 use crate::chat_server::ChatServer;
 use crate::message::{self, JoinOnlineUser};
+
 use actix::prelude::*;
 use actix::Handler;
 use actix::{Actor, StreamHandler};
 use actix::{ActorContext, SystemService};
 use actix_broker::BrokerIssue;
 use actix_web_actors::ws;
-#[derive(Default)]
 pub struct UserSession {
     pub user_id: String,
 }
 impl UserSession {
     pub fn send_text_message_to_room(&self, user_id: i32, content: &str, roomid: i32) {
-        let id: i32 = rand::random();
         let msg = message::Message {
-            id: id.to_string(),
             msg_content: content.to_string(),
             msg_from: user_id.to_string(),
             msg_to: message::MessageTo::RoomMessage(roomid.to_string()),
             msg_type: message::MessageType::Text,
         };
+
         self.issue_system_async(msg);
     }
     pub fn send_text_message_to_friend(&self, userid: i32, content: &str, friendid: i32) {
-        let id: i32 = rand::random();
         let msg = message::Message {
-            id: id.to_string(),
             msg_content: content.to_string(),
             msg_to: message::MessageTo::UserMessage(friendid.to_string()),
             msg_from: userid.to_string(),

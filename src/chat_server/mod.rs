@@ -1,5 +1,9 @@
-use crate::message;
+use crate::db::message_operation::read_unrecived_message_no_actix;
+use crate::db::message_operation::MessageOperator;
+use crate::db::user_operator::get_user_by_id_nodb;
 use crate::message::JoinOnlineUser;
+use crate::models::message_model::{Message, NewMessage};
+use crate::{establish_connection, message};
 use actix::prelude::*;
 use actix::{Actor, Context};
 use actix_broker::BrokerSubscribe;
@@ -34,11 +38,9 @@ impl ChatServer {
     pub fn notify(&self) {}
 
     pub fn send_text_message_to_room(&self, userid: i32, roomid: i32, msg: &str) {
-        let msgid = format!("{:?}", std::time::Instant::now());
         let msg = message::Message {
             msg_content: msg.to_string(),
             msg_from: userid.to_string(),
-            id: msgid,
             msg_to: message::MessageTo::RoomMessage(roomid.to_string()),
             msg_type: message::MessageType::Text,
         };
@@ -49,12 +51,22 @@ impl ChatServer {
             }
         }
     }
+    pub fn write_new_message_to_db(&self, new_message: NewMessage) {
+        let conn = establish_connection();
+        let msg_operator = MessageOperator { conn: &conn };
+        msg_operator.new_message(&new_message).unwrap();
+    }
+    pub fn user_is_exist(&self, userid: i32) -> bool {
+        let conn = establish_connection();
+        match get_user_by_id_nodb(userid, &conn) {
+            Some(_) => true,
+            None => false,
+        }
+    }
 
-    pub fn send_text_message_to_friend(&self, userid: i32, friendid: i32, msg: &str) {
-        let msgid = format!("{}-{:?}", friendid, std::time::Instant::now());
+    pub fn send_text_message_to_friend(&self, userid: i32, friendid: i32, content: &str) {
         let msg = message::Message {
-            msg_content: msg.to_string(),
-            id: msgid,
+            msg_content: content.to_string(),
             msg_to: message::MessageTo::UserMessage(friendid.to_string()),
             msg_from: userid.to_string(),
             msg_type: message::MessageType::Text,
@@ -63,34 +75,39 @@ impl ChatServer {
         let friend = self.online_users.get(&friendid.to_string());
         if let Some(online_user) = friend {
             online_user.do_send(msg).unwrap();
+        } else {
+            match self.user_is_exist(userid) {
+                true => {
+                    let new_message = NewMessage {
+                        user_id: userid,
+                        destination_id: friendid,
+                        message_type: "Text",
+                        message_content: Some(content),
+                    };
+                    self.write_new_message_to_db(new_message)
+                }
+                false => {}
+            }
         }
     }
-    pub fn read_message(&self, _userid: i32) {}
+    pub fn read_message(&self, userid: i32, message_index: i32) -> Option<Vec<Message>> {
+        let conn = establish_connection();
+        match read_unrecived_message_no_actix(userid, message_index, &conn) {
+            Some(messages) => Some(messages),
+            None => None,
+        }
+    }
     pub fn join_online_user(&mut self, userid: i32, ctx: Recipient<message::Message>) {
         let user = self.online_users.get(&userid.to_string());
         if None == user {
             self.online_users.insert(userid.to_string(), ctx);
         }
-        // else {
-        //     let id: i32 = rand::random();
-        //     let msg = message::Message {
-        //         id: id.to_string(),
-        //         msg_content: "alread register to online user".to_string(),
-        //         msg_from: userid.to_string(),
-        //         msg_to: message::MessageTo::UserMessage(userid.to_string()),
-        //         msg_type: message::MessageType::Text,
-        //     };
-        //     if let Some(user) = user {
-        //         user.do_send(msg).unwrap();
-        //     }
-        // }
     }
 }
 
 impl Actor for ChatServer {
     type Context = Context<Self>;
     fn started(&mut self, ctx: &mut Self::Context) {
-        println!("chat server started");
         self.subscribe_system_async::<message::Message>(ctx);
     }
 }
@@ -107,8 +124,6 @@ impl Handler<message::Message> for ChatServer {
                 )
             }
         }
-
-        
 
         if let message::MessageTo::RoomMessage(id) = msg.msg_to {
             if let message::MessageType::Text = msg.msg_type {

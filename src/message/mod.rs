@@ -60,7 +60,6 @@ pub struct SendMessageToFriend{
 #[derive(Message,Clone)]
 #[rtype(result = "()")]
 pub struct Message{
-    pub id:String,
     pub msg_content:String,
     pub msg_type:MessageType,
     pub msg_from:String,

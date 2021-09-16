@@ -36,12 +36,25 @@ impl UserOperator<'_> {
        
     }
 
-    pub fn get_user_by_id(&self, user_id: i32) -> User {
-        let result: User = users
+    pub fn get_user_by_id(&self, user_id: i32) ->Option<User>  {
+        let result = users
             .filter(id.eq(&user_id))
             .limit(1)
-            .get_result::<User>(&self.conn.get().unwrap())
-            .expect("error load user");
-        result
+            .get_result::<User>(&self.conn.get().unwrap());
+            match result {
+                Ok(user) => {Some(user)},
+                Err(_) => {None},
+            }
     }
+}
+
+pub fn get_user_by_id_nodb( user_id: i32,conn:&PgConnection) ->Option<User> {
+    let result = users
+        .filter(id.eq(&user_id))
+        .limit(1)
+        .get_result::<User>(conn);
+        match result {
+            Ok(user) => {Some(user)},
+            Err(_) => {None},
+        }
 }
