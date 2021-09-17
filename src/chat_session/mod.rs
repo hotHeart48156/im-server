@@ -1,5 +1,5 @@
 use crate::chat_server::ChatServer;
-use crate::message::{self, JoinOnlineUser};
+use crate::message::{self, JoinOnlineUser, MessageType, RemoveOnlineUser};
 
 use actix::prelude::*;
 use actix::Handler;
@@ -11,22 +11,34 @@ pub struct UserSession {
     pub user_id: String,
 }
 impl UserSession {
-    pub fn send_text_message_to_room(&self, user_id: i32, content: &str, roomid: i32) {
+    pub fn send_message_to_room(
+        &self,
+        user_id: i32,
+        content: &str,
+        roomid: i32,
+        msg_type: MessageType,
+    ) {
         let msg = message::Message {
             msg_content: content.to_string(),
             msg_from: user_id.to_string(),
             msg_to: message::MessageTo::RoomMessage(roomid.to_string()),
-            msg_type: message::MessageType::Text,
+            msg_type: msg_type,
         };
 
         self.issue_system_async(msg);
     }
-    pub fn send_text_message_to_friend(&self, userid: i32, content: &str, friendid: i32) {
+    pub fn send_message_to_friend(
+        &self,
+        userid: i32,
+        content: &str,
+        friendid: i32,
+        msg_type: MessageType,
+    ) {
         let msg = message::Message {
             msg_content: content.to_string(),
             msg_to: message::MessageTo::UserMessage(friendid.to_string()),
             msg_from: userid.to_string(),
-            msg_type: message::MessageType::Text,
+            msg_type: msg_type,
         };
         self.issue_system_async(msg);
     }
@@ -69,29 +81,42 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for UserSession {
                     let mut command = msg.split("/");
                     command.next();
                     match command.next() {
-                        Some("send_text_message_to_friend") => {
+                        Some("send_message_to_friend") => {
                             let mut recv_msg = "";
                             let mut recv_friend_id: i32 = 0;
+                            let mut recv_msg_type: MessageType = MessageType::Text;
                             if let Some(msg) = command.next() {
                                 recv_msg = msg;
                             }
                             if let Some(friend_id) = command.next() {
                                 recv_friend_id = friend_id.parse::<i32>().unwrap();
                             }
+                            if let Some(msg_type) = command.next() {
+                                match msg_type {
+                                    "TEXT" => recv_msg_type = MessageType::Text,
+                                    "BINARY" => recv_msg_type = MessageType::Binary,
+                                    _ => {
+                                        ctx.text("message type not correct");
+                                        ctx.stop()
+                                    }
+                                }
+                            }
                             ctx.text(recv_msg);
                             self.join_online_user(
                                 self.user_id.parse::<i32>().unwrap().clone(),
                                 ctx.address().recipient(),
                             );
-                            self.send_text_message_to_friend(
+                            self.send_message_to_friend(
                                 self.user_id.parse::<i32>().unwrap(),
                                 recv_msg,
                                 recv_friend_id,
+                                recv_msg_type,
                             )
                         }
-                        Some("send_text_message_to_room") => {
+                        Some("send_message_to_room") => {
                             let mut recv_msg = "";
                             let mut recv_room_id: i32 = 0;
+                            let mut recv_msg_type: MessageType = MessageType::Text;
 
                             if let Some(msg) = command.next() {
                                 recv_msg = msg;
@@ -99,14 +124,25 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for UserSession {
                             if let Some(room_id) = command.next() {
                                 recv_room_id = room_id.parse::<i32>().unwrap();
                             }
+                            if let Some(msg_type) = command.next() {
+                                match msg_type {
+                                    "TEXT" => recv_msg_type = MessageType::Text,
+                                    "BINARY" => recv_msg_type = MessageType::Binary,
+                                    _ => {
+                                        ctx.text("message type not correct");
+                                        ctx.stop()
+                                    }
+                                }
+                            }
                             self.join_online_user(
                                 self.user_id.parse::<i32>().unwrap().clone(),
                                 ctx.address().recipient(),
                             );
-                            self.send_text_message_to_room(
+                            self.send_message_to_room(
                                 self.user_id.parse::<i32>().unwrap(),
                                 recv_msg,
                                 recv_room_id,
+                                recv_msg_type
                             );
                             ctx.text(recv_msg)
                         }
@@ -127,9 +163,11 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for UserSession {
                 }
             }
             ws::Message::Close(reason) => {
+                self.issue_system_async(RemoveOnlineUser{user_id:self.user_id.parse::<i32>().unwrap()});
                 ctx.close(reason);
                 ctx.stop();
             }
+
             _ => {}
         };
     }

@@ -14,6 +14,12 @@ pub struct JoinOnlineUser{
     pub ctx:Recipient<Message>
 }
 
+#[derive(Message,Clone,Copy)]
+#[rtype(result = "()")]
+pub struct RemoveOnlineUser{
+    pub user_id:i32,
+}
+
 #[derive(Message)]
 #[rtype(result = "()")]
 pub struct AddUserToRoom{

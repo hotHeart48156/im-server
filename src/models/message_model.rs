@@ -5,7 +5,10 @@ pub struct Message {
     pub user_id: i32,
     pub destination_id: i32,
     pub message_type: String,
-    pub message_content: Option<String>,
+    pub message_content:String,
+    pub destination_type: String,
+
+    
 }
 
 #[derive(Debug,Insertable)]
@@ -14,5 +17,7 @@ pub struct NewMessage<'a> {
     pub user_id: i32,
     pub destination_id: i32,
     pub message_type: &'a str,
-    pub message_content: Option<&'a str>,
+    pub message_content: &'a str,
+    pub destination_type: &'a str,
+
 }

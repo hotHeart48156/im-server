@@ -12,7 +12,8 @@ table! {
         user_id -> Int4,
         destination_id -> Int4,
         message_type -> Varchar,
-        message_content -> Nullable<Text>,
+        message_content -> Text,
+        destination_type -> Varchar,
     }
 }
 
