@@ -3,7 +3,8 @@ use crate::db::message_operation::MessageOperator;
 use crate::db::user_operator::get_user_by_id_nodb;
 use crate::message::JoinOnlineUser;
 use crate::message::RemoveOnlineUser;
-use crate::models::message_model::{Message, NewMessage};
+use crate::models::message_model;
+use crate::models::message_model::NewMessage;
 use crate::{establish_connection, message};
 use actix::prelude::*;
 use actix::{Actor, Context};
@@ -65,52 +66,61 @@ impl ChatServer {
         }
     }
 
-    pub fn send_message_to_friend(
-        &self,
-        userid: i32,
-        friendid: i32,
-        content: &str,
-        msg_type: message::MessageType,
-    ) {
-        let msg_to_online_user = message::Message {
-            msg_content: content.to_string(),
-            msg_to: message::MessageTo::UserMessage(friendid.to_string()),
-            msg_from: userid.to_string(),
-            msg_type: msg_type.clone(),
-        };
-        let mut  message_type:String=String::from("");
-        match msg_type {
+    pub fn send_message_to_friend(&self, msg: message::Message) {
+        let msg_t = msg.clone();
+        let message_type: String;
+        match msg.msg_type.clone() {
             message::MessageType::Text => message_type = "TEXT".to_string(),
             message::MessageType::Binary => message_type = "BINARY".to_string(),
         }
-        println!("{}",message_type);
+        let message_to_id: i32;
+        match msg.msg_to.clone() {
+            message::MessageTo::UserMessage(id) => message_to_id = id.parse::<i32>().unwrap(),
+            message::MessageTo::RoomMessage(id) => message_to_id = id.parse::<i32>().unwrap(),
+        }
+
+        let message_to_type: String;
+        match msg.msg_to.clone() {
+            message::MessageTo::UserMessage(_) => message_to_type = "USER".to_string(),
+            message::MessageTo::RoomMessage(_) => message_to_type = "ROOM".to_string(),
+        }
         let new_message_database = NewMessage {
-            user_id: userid,
-            destination_id: friendid,
+            user_id: msg.msg_from.parse::<i32>().unwrap(),
+            destination_id: message_to_id,
             message_type: message_type.as_str(),
-            message_content:content,
-            destination_type:"USER"
+            message_content: msg.msg_content.as_str(),
+            destination_type: message_to_type.as_str(),
         };
 
-        let friend = self.online_users.get(&friendid.to_string());
+        let friend = self.online_users.get(&message_to_id.to_string());
         if let Some(online_user) = friend {
-            online_user.do_send(msg_to_online_user).unwrap();
+            match online_user.do_send(msg_t) {
+                Ok(_) => {
+                    println!("send ok")
+                }
+                Err(_) => {}
+            }
+            println!("send mes to id {}", message_to_id);
             self.write_new_message_to_db(new_message_database)
         } else {
-            match self.user_is_exist(userid) {
+            match self.user_is_exist(msg.msg_from.parse::<i32>().unwrap()) {
                 true => self.write_new_message_to_db(new_message_database),
                 false => {}
             }
         }
     }
-    pub fn read_message(&self, userid: i32, message_index: i32) -> Option<Vec<Message>> {
+    pub fn read_message(
+        &self,
+        userid: i32,
+        message_index: i32,
+    ) -> Option<Vec<message_model::Message>> {
         let conn = establish_connection();
         match read_unrecived_message_no_actix(userid, message_index, &conn) {
             Some(messages) => Some(messages),
             None => None,
         }
     }
-    pub fn remove_user(&mut self,userid:i32){
+    pub fn remove_user(&mut self, userid: i32) {
         self.online_users.remove(&userid.to_string());
     }
     pub fn join_online_user(&mut self, userid: i32, ctx: Recipient<message::Message>) {
@@ -124,32 +134,35 @@ impl ChatServer {
 impl Actor for ChatServer {
     type Context = Context<Self>;
     fn started(&mut self, ctx: &mut Self::Context) {
-        self.subscribe_system_async::<message::Message>(ctx);
+        // self.subscribe_system_async::<message::Message>(ctx);
         self.subscribe_system_async::<message::RemoveOnlineUser>(ctx);
     }
 }
 
 impl Handler<message::Message> for ChatServer {
-    type Result = ();
-    fn handle(&mut self, msg: message::Message, _ctx: &mut Self::Context) -> Self::Result {
-        if let message::MessageTo::UserMessage(id) = msg.msg_to.clone() {
-            self.send_message_to_friend(
-                msg.msg_from.parse::<i32>().unwrap(),
-                id.parse::<i32>().unwrap(),
-                msg.msg_content.as_str(),
-                msg.msg_type.clone(),
-            )
-        }
+    type Result = MessageResult<message::Message>;
+    // type Result = ();
 
-        if let message::MessageTo::RoomMessage(id) = msg.msg_to {
-            if let message::MessageType::Text = msg.msg_type {
-                self.send_message_to_room(
-                    msg.msg_from.parse::<i32>().unwrap(),
-                    id.parse::<i32>().unwrap(),
-                    msg.msg_content.as_str(),
-                );
-            }
-        }
+    fn handle(&mut self, msg: message::Message, _ctx: &mut Self::Context) -> Self::Result {
+        self.send_message_to_friend(msg.clone());
+        MessageResult(msg.to_string())
+
+        // MessageResult(msg_result.to_string())
+        // match msg.msg_to {
+        //     message::MessageTo::UserMessage(user_id) => match msg.msg_type {
+        //         message::MessageType::Text => {
+        //             self.send_message_to_friend(msg);
+        //             MessageResult(msg_result.to_string())
+        //         }
+        //         message::MessageType::Binary => {
+
+        //         }
+        //     },
+        //     message::MessageTo::RoomMessage(room_id) => match msg.msg_type {
+        //         message::MessageType::Text => {}
+        //         message::MessageType::Binary => {}
+        //     },
+        // }
     }
 }
 

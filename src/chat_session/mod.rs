@@ -25,7 +25,7 @@ impl UserSession {
             msg_type: msg_type,
         };
 
-        self.issue_system_async(msg);
+        ChatServer::from_registry().do_send(msg);
     }
     pub fn send_message_to_friend(
         &self,
@@ -40,7 +40,14 @@ impl UserSession {
             msg_from: userid.to_string(),
             msg_type: msg_type,
         };
-        self.issue_system_async(msg);
+        // let t=ChatServer::from_registry().send(msg)
+        //     .into_actor(self)
+        //     .then(|res, _, ctx| {
+        //         if let Ok(string) =res  {
+
+        //         }
+        //     })
+        ChatServer::from_registry().do_send(msg)
     }
     pub fn join_online_user(&self, userid: i32, ctx: Recipient<message::Message>) {
         let msg = JoinOnlineUser {
@@ -60,9 +67,13 @@ impl Actor for UserSession {
 }
 
 impl Handler<message::Message> for UserSession {
-    type Result = ();
-    fn handle(&mut self, msg: message::Message, ctx: &mut Self::Context) -> Self::Result {
-        ctx.text(msg.msg_content);
+    type Result = MessageResult<message::Message>;
+    // type Result = ();
+
+    fn handle(&mut self, msg: message::Message, _ctx: &mut Self::Context) -> Self::Result {
+        let tt=msg.clone();
+        _ctx.text(msg.to_string());//发送消息关键
+        MessageResult(tt.to_string())
     }
 }
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for UserSession {
@@ -142,7 +153,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for UserSession {
                                 self.user_id.parse::<i32>().unwrap(),
                                 recv_msg,
                                 recv_room_id,
-                                recv_msg_type
+                                recv_msg_type,
                             );
                             ctx.text(recv_msg)
                         }
@@ -163,7 +174,9 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for UserSession {
                 }
             }
             ws::Message::Close(reason) => {
-                self.issue_system_async(RemoveOnlineUser{user_id:self.user_id.parse::<i32>().unwrap()});
+                self.issue_system_async(RemoveOnlineUser {
+                    user_id: self.user_id.parse::<i32>().unwrap(),
+                });
                 ctx.close(reason);
                 ctx.stop();
             }
