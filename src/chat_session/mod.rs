@@ -40,13 +40,6 @@ impl UserSession {
             msg_from: userid.to_string(),
             msg_type: msg_type,
         };
-        // let t=ChatServer::from_registry().send(msg)
-        //     .into_actor(self)
-        //     .then(|res, _, ctx| {
-        //         if let Ok(string) =res  {
-
-        //         }
-        //     })
         ChatServer::from_registry().do_send(msg)
     }
     pub fn join_online_user(&self, userid: i32, ctx: Recipient<message::Message>) {
@@ -174,6 +167,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for UserSession {
                 }
             }
             ws::Message::Close(reason) => {
+                println!("user leave {}",self.user_id);
                 self.issue_system_async(RemoveOnlineUser {
                     user_id: self.user_id.parse::<i32>().unwrap(),
                 });

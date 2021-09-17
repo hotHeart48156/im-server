@@ -1,12 +1,5 @@
 use actix::prelude::*;
 
-// add
-#[derive(Message)]
-#[rtype(result = "()")]
-pub struct AddFriend {
-    pub user_id: i32,
-    pub friend_id: i32,
-}
 #[derive(Message)]
 #[rtype(result = "()")]
 pub struct JoinOnlineUser {
@@ -18,27 +11,6 @@ pub struct JoinOnlineUser {
 #[rtype(result = "()")]
 pub struct RemoveOnlineUser {
     pub user_id: i32,
-}
-
-#[derive(Message)]
-#[rtype(result = "()")]
-pub struct AddUserToRoom {
-    pub user_id: i32,
-    pub room_id: i32,
-}
-
-//leave
-#[derive(Message)]
-#[rtype(result = "()")]
-pub struct LeaveRoom {
-    pub user_id: i32,
-    pub room_id: i32,
-}
-#[derive(Message)]
-#[rtype(result = "()")]
-pub struct LeaveFriend {
-    pub user_id: i32,
-    pub friend_id: i32,
 }
 
 #[derive(Message, Clone)]
