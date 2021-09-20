@@ -1,4 +1,4 @@
-use crate::routers::{scoped_function, web_stock_chat_route};
+use crate::routers::{chat_server::web_stock_chat_route, scoped_function};
 use actix_http::http;
 use actix_redis::RedisSession;
 use actix_web::{Result,App, HttpServer, dev, middleware::{self, errhandlers::{ErrorHandlerResponse, ErrorHandlers}}, web};

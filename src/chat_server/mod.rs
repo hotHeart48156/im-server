@@ -66,7 +66,7 @@ impl ChatServer {
         }
     }
 
-    pub fn send_message_to_friend(&self, msg: message::Message) {
+    pub fn send_message(&self, msg: message::Message) {
         let msg_t = msg.clone();
         let message_type: String;
         match msg.msg_type.clone() {
@@ -144,25 +144,8 @@ impl Handler<message::Message> for ChatServer {
     // type Result = ();
 
     fn handle(&mut self, msg: message::Message, _ctx: &mut Self::Context) -> Self::Result {
-        self.send_message_to_friend(msg.clone());
+        self.send_message(msg.clone());
         MessageResult(msg.to_string())
-
-        // MessageResult(msg_result.to_string())
-        // match msg.msg_to {
-        //     message::MessageTo::UserMessage(user_id) => match msg.msg_type {
-        //         message::MessageType::Text => {
-        //             self.send_message_to_friend(msg);
-        //             MessageResult(msg_result.to_string())
-        //         }
-        //         message::MessageType::Binary => {
-
-        //         }
-        //     },
-        //     message::MessageTo::RoomMessage(room_id) => match msg.msg_type {
-        //         message::MessageType::Text => {}
-        //         message::MessageType::Binary => {}
-        //     },
-        // }
     }
 }
 

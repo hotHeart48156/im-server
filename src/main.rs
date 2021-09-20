@@ -14,7 +14,7 @@ use im_server::server::{start_server};
 
 async fn main() {
     // service_dispatcher::start("myservice", ffi_service_main).unwrap();
+
+   
     start_server().await;
 }
-
-
