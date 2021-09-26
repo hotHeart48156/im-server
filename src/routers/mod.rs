@@ -17,6 +17,7 @@ pub fn scoped_function(cfg: &mut web::ServiceConfig) {
         .service(upload::upload_avater)
         .service(upload_message_binarg)
         .service(user::room::list_room)
+        .service(static_file::get_binary_file)
         .service(static_file::get_avater)
         ;
 }
