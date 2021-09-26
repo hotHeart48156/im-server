@@ -7,6 +7,7 @@ pub struct Message {
     pub message_type: String,
     pub message_content:String,
     pub destination_type: String,
+    pub arrive_time:chrono::NaiveDateTime 
 
     
 }
@@ -19,5 +20,6 @@ pub struct NewMessage<'a> {
     pub message_type: &'a str,
     pub message_content: &'a str,
     pub destination_type: &'a str,
+    pub arrive_time:chrono::NaiveDateTime 
 
 }

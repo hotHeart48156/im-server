@@ -8,6 +8,7 @@ pub struct User {
     pub name: String,
     pub gender: Option<i16>,
     pub password: String,
+    pub avater:Option<String>
 }
 
 #[derive(Insertable, AsExpression)]
@@ -16,6 +17,12 @@ pub struct NewUser<'a> {
     pub name: &'a str,
     pub gender: i16,
     pub password: &'a str,
+}
+
+#[derive(Insertable, AsExpression)]
+#[table_name = "users"]
+pub struct Avater<'a> {
+    pub avater: &'a str,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PostUser {

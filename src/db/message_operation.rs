@@ -23,7 +23,7 @@ impl<'a> MessageOperator<'a> {
     ) -> Option<Vec<message_model::Message>> {
         let t = message
             .filter(user_id.eq(&userid).and(id.lt(message_index)))
-            .get_results::<message_model::Message>(self.conn);
+            .load::<message_model::Message>(self.conn);
         match t {
             Ok(messages) => Some(messages),
             Err(_) => None,
@@ -38,7 +38,7 @@ pub fn read_unrecived_message_no_actix(
 ) -> Option<Vec<message_model::Message>> {
     let t = message
         .filter(user_id.eq(&userid).and(id.lt(message_index)))
-        .get_results::<message_model::Message>(conn);
+        .load::<message_model::Message>(conn);
     match t {
         Ok(messages) => Some(messages),
         Err(_) => None,

@@ -14,6 +14,7 @@ table! {
         message_type -> Varchar,
         message_content -> Text,
         destination_type -> Varchar,
+        arrive_time -> Timestamp,
     }
 }
 
@@ -38,6 +39,7 @@ table! {
         name -> Varchar,
         gender -> Nullable<Int2>,
         password -> Varchar,
+        avater -> Nullable<Varchar>,
     }
 }
 

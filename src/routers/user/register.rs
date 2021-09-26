@@ -11,7 +11,10 @@ pub async fn register(
     let user = user_operator
         .get_user_by_name_and_password(userinfo.name.to_owned(), userinfo.password.to_owned());
     if let None=user {
-        user_operator.new_user(userinfo.name.as_str(), userinfo.password.as_str(), 0);
+        match user_operator.new_user(userinfo.name.as_str(), userinfo.password.as_str(), 0) {
+            Ok(_) => {},
+            Err(_) => {},
+        };
         Ok(HttpResponse::Ok().body("ok"))
     }else {
         Ok(HttpResponse::Conflict().body("user exist"))

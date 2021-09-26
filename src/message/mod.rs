@@ -1,4 +1,35 @@
+// pub mod  message_date_format;
 use actix::prelude::*;
+use chrono::{DateTime, Local};
+use serde::{Serialize,Deserialize};
+
+pub mod message_date_format {
+    use chrono::{DateTime, TimeZone};
+    use serde::{self, Deserialize, Serializer, Deserializer};
+
+    const FORMAT: &'static str = "%Y-%m-%d %H:%M:%S";
+    pub fn serialize<S>(
+        date: &DateTime<chrono::Local>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        // date.timestamp()
+        let s = format!("{}", date.format(FORMAT));
+        serializer.serialize_str(&s)
+    }
+
+    pub fn deserialize<'de, D>(
+        deserializer: D,
+    ) -> Result<DateTime<chrono::Local>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        chrono::Local.datetime_from_str(&s, FORMAT).map_err(serde::de::Error::custom)
+    }
+}
 
 #[derive(Message)]
 #[rtype(result = "()")]
@@ -13,13 +44,15 @@ pub struct RemoveOnlineUser {
     pub user_id: i32,
 }
 
-#[derive(Message, Clone)]
+#[derive(Message, Clone,Serialize,Deserialize)]
 #[rtype(result = "String")]
 pub struct Message {
     pub msg_content: String,
     pub msg_from: String,
     pub msg_type: MessageType,
     pub msg_to: MessageTo,
+    #[serde(with = "message_date_format")]
+    pub arrive_time:DateTime<Local> 
 }
 impl Message {
     pub fn to_string(&self) -> String {
@@ -43,14 +76,14 @@ impl Message {
     }
 }
 
-#[derive(Message, Clone)]
+#[derive(Message, Clone,Serialize,Deserialize)]
 #[rtype(result = "()")]
 pub enum MessageType {
     Text,
     Binary,
 }
 
-#[derive(Message, Clone)]
+#[derive(Message, Clone,Serialize,Deserialize)]
 #[rtype(result = "()")]
 pub enum MessageTo {
     UserMessage(String),

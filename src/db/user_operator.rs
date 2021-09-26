@@ -1,4 +1,4 @@
-use crate::models::user_model::{NewUser, User};
+use crate::models::user_model::{self, NewUser, User};
 use crate::schema::users;
 use crate::schema::users::dsl::*;
 use crate::server::DbPoolType;
@@ -9,7 +9,7 @@ pub struct UserOperator<'a> {
 }
 
 impl UserOperator<'_> {
-    pub fn new_user(&self, user_name: &str, user_password: &str, user_gender: i16) {
+    pub fn new_user(&self, user_name: &str, user_password: &str, user_gender: i16)->Result<user_model::User, diesel::result::Error>  {
         let new_user = NewUser {
             name: user_name,
             password: user_password,
@@ -18,7 +18,6 @@ impl UserOperator<'_> {
         diesel::insert_into(users::table)
             .values(&new_user)
             .get_result::<User>(&self.conn.get().unwrap())
-            .expect("error create user");
     }
     pub fn get_user_by_name_and_password(
         &self,
@@ -34,6 +33,12 @@ impl UserOperator<'_> {
                 Err(_)=>{None}
             }
        
+    }
+
+    pub fn add_avater(&self,userid:i32,avaterpath:String)->Result<user_model::User, diesel::result::Error> {
+        diesel::update(users.find(userid))
+        .set(avater.eq(avaterpath))
+        .get_result::<User>(&self.conn.get().unwrap())
     }
 
     pub fn get_user_by_id(&self, user_id: i32) ->Option<User>  {

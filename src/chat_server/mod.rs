@@ -10,6 +10,7 @@ use actix::prelude::*;
 use actix::{Actor, Context};
 use actix_broker::BrokerSubscribe;
 use std::collections::HashMap;
+use chrono::prelude::*;
 type RoomClient = Recipient<message::Message>;
 type Room = HashMap<usize, RoomClient>;
 type OnlineClient = Recipient<message::Message>;
@@ -39,12 +40,13 @@ impl ChatServer {
     }
     pub fn notify(&self) {}
 
-    pub fn send_message_to_room(&self, userid: i32, roomid: i32, msg: &str) {
+    pub fn send_message_to_room(&self, userid: i32, roomid: i32, msg: &str,arrive_time:DateTime<chrono::Local>) {
         let msg = message::Message {
             msg_content: msg.to_string(),
             msg_from: userid.to_string(),
             msg_to: message::MessageTo::RoomMessage(roomid.to_string()),
             msg_type: message::MessageType::Text,
+            arrive_time:arrive_time
         };
         if let Some(room) = self.rooms.get(&roomid.to_string()) {
             let msg = msg.clone();
@@ -65,7 +67,7 @@ impl ChatServer {
             None => false,
         }
     }
-
+   
     pub fn send_message(&self, msg: message::Message) {
         let msg_t = msg.clone();
         let message_type: String;
@@ -90,17 +92,16 @@ impl ChatServer {
             message_type: message_type.as_str(),
             message_content: msg.msg_content.as_str(),
             destination_type: message_to_type.as_str(),
+            arrive_time:msg.arrive_time.naive_local()
         };
 
         let friend = self.online_users.get(&message_to_id.to_string());
         if let Some(online_user) = friend {
             match online_user.do_send(msg_t) {
                 Ok(_) => {
-                    println!("send ok")
                 }
                 Err(_) => {}
             }
-            println!("send mes to id {}", message_to_id);
             self.write_new_message_to_db(new_message_database)
         } else {
             match self.user_is_exist(msg.msg_from.parse::<i32>().unwrap()) {

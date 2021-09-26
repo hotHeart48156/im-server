@@ -70,6 +70,8 @@ pub async fn delete_friend(
     )
 }
 
+
+
 pub fn handle<F>(
     pool: web::Data<DbPoolType>,
     friend: PostFriend,

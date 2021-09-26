@@ -7,6 +7,7 @@ use actix::{Actor, StreamHandler};
 use actix::{ActorContext, SystemService};
 use actix_broker::BrokerIssue;
 use actix_web_actors::ws;
+use chrono::prelude::*;
 pub struct UserSession {
     pub user_id: String,
 }
@@ -23,6 +24,7 @@ impl UserSession {
             msg_from: user_id.to_string(),
             msg_to: message::MessageTo::RoomMessage(roomid.to_string()),
             msg_type: msg_type,
+            arrive_time:Local::now()
         };
 
         ChatServer::from_registry().do_send(msg);
@@ -39,6 +41,8 @@ impl UserSession {
             msg_to: message::MessageTo::UserMessage(friendid.to_string()),
             msg_from: userid.to_string(),
             msg_type: msg_type,
+            arrive_time:Local::now()
+
         };
         ChatServer::from_registry().do_send(msg)
     }
@@ -63,9 +67,13 @@ impl Handler<message::Message> for UserSession {
     type Result = MessageResult<message::Message>;
     // type Result = ();
 
-    fn handle(&mut self, msg: message::Message, _ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: message::Message, ctx: &mut Self::Context) -> Self::Result {
         let tt=msg.clone();
-        _ctx.text(msg.to_string());//发送消息关键
+        let json_text=match serde_json::to_string(&msg) {
+            Ok(text) => {text},
+            Err(_) => {"".to_string()},
+        };
+        ctx.text(json_text);//发送消息关键
         MessageResult(tt.to_string())
     }
 }
