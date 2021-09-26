@@ -6,20 +6,21 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Item;
 
-pub struct Token<'a> {
+pub struct Token {
     pub header: Header,
-    pub secret: &'a str,
+    pub secret: String,
     pub validation: Validation,
 }
-impl<'a> Token<'a> {
+impl  Token {
     pub fn default() -> Self {
+        let sec=std::env::var("TOKEN_SECRET").unwrap();
         Token {
             header: Header::new(Algorithm::HS512),
-            secret: "secret_key",
+            secret: sec,
             validation: Validation::new(Algorithm::HS512),
         }
     }
-    pub fn gen_token<T>(&self, item: &'a T) -> Result<String, jsonwebtoken::errors::Error>
+    pub fn gen_token<'a,T>(&self, item: &'a T) -> Result<String, jsonwebtoken::errors::Error>
     where
         T: Serialize + DeserializeOwned,
     {
