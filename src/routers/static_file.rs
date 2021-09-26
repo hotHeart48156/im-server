@@ -34,7 +34,7 @@ async fn get_binary_file(req:HttpRequest)->Result<NamedFile>{
             match check_user_token_is_expired(std::str::from_utf8(tk.as_bytes()).unwrap()) {
                 Some(_) => {
                     let filename: PathBuf = req.match_info().query("filename").parse().unwrap();
-                    let dir=std::env::var("/static/").unwrap();
+                    let dir=std::env::var("MESSAGE_BINARY_DIR").unwrap();
                     let mut path=PathBuf::from(dir);
                     path.push(filename);
                    return  Ok(NamedFile::open(path)?)
